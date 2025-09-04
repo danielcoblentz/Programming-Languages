@@ -3,25 +3,21 @@
     #include "y.tab.h"
     #include <stdlib.h>
     void yyerror(char *);
+    extern int yylval;
 %}
 
 %%
-
-[a-z]       {
-                yylval = *yytext - 'a';
-                return VARIABLE;
-                }
 
 [0-9]+      {
                 yylval = atoi(yytext);
                 return INTEGER;
             }
 
-[-+()=/*\n]     { return *yytext; }
+[-+\n]      { return *yytext; }
 
-[ \t]   ;       /* skip whitespace */
+[ \t]       ;       /* skip whitespace */
 
-.               yyerror("Unknown character");
+.           yyerror("Unknown character");
 
 %%
 

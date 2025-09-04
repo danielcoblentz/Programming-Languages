@@ -1,28 +1,42 @@
-# build environment for cygwin
+#!/usr/bin/env bash
+set -euo pipefail
 
-# bison -d calc1.y    produces calc1.tab.c
-# bison -y -d calc1.y produces y.tab.c (the standard yacc output)
+# Helper to run flex on either .l or .1
+flex_on() {
+  local stem="$1"
+  if [[ -f "${stem}.l" ]]; then
+    echo "flex ${stem}.l"
+    flex "${stem}.l"
+  elif [[ -f "${stem}.1" ]]; then
+    echo "flex ${stem}.1 -> ${stem}.l"
+    cp "${stem}.1" "${stem}.l"
+    flex "${stem}.l"
+  else
+    echo "ERROR: missing ${stem}.l (or ${stem}.1)"; return 1
+  fi
+}
 
-# for calc1 and calc2, you may have to
-# include the following in the lex ".l" file:
-#    extern int yylval;
-
-# calc1
+echo "== calc1 =="
 bison -y -d calc1.y
-flex calc1.l
-gcc -c y.tab.c lex.yy.c
+flex_on calc1
+gcc -c -Wall -Wextra y.tab.c lex.yy.c
 gcc y.tab.o lex.yy.o -o calc1.exe
 
-# calc2
+echo "== calc2 =="
 bison -y -d calc2.y
-flex calc2.l
-gcc -c y.tab.c lex.yy.c
+flex_on calc2
+gcc -c -Wall -Wextra y.tab.c lex.yy.c
 gcc y.tab.o lex.yy.o -o calc2.exe
 
-# calc3
+echo "== calc3 =="
 bison -y -d calc3.y
-flex calc3.l
-gcc -c y.tab.c lex.yy.c
-gcc y.tab.o lex.yy.o calc3a.c -o calc3a.exe
-gcc y.tab.o lex.yy.o calc3b.c -o calc3b.exe
-gcc y.tab.o lex.yy.o calc3g.c -o calc3g.exe
+flex_on calc3
+# Three backends: a (evaluator), b (stack VM), g (graph)
+for impl in a b g; do
+  echo "-- calc3${impl}.exe --"
+  gcc -c -Wall -Wextra y.tab.c lex.yy.c calc3${impl}.c
+  gcc y.tab.o lex.yy.o calc3${impl}.o -o "calc3${impl}.exe"
+done
+
+echo "Build complete."
+
